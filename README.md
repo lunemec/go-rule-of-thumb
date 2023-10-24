@@ -7,6 +7,11 @@ Often, you'll find yourself in a situation where you need to weigh the benefits 
 
 The decision isn't as simple as solely relying on `Big O` notation, which primarily reflects time complexity. Real-world performance depends on various factors, such as memory locality, the number of allocations, pointer chasing, and more.
 
+## Disclaimer
+❗These rules are not a dogma! Please don't link to this document saying "you should use this because rules-of-thumb says so". Always measure and benchmark your own code with your own data.
+
+Examples here are what is called micro-optimization, before diving into these, profile your code, find real bottlenecks, and fix low hanging fruit there first.
+
 
 ## Needle in a haystack
 When is it more efficient to convert a *slice* into a *map* for locating an element `x` within the set `A` (x ∈ A)?
@@ -118,6 +123,8 @@ Is it more efficient to `append([]T, elems...)` or in a `for` loop one-by-one?
 Is it more efficient to `"str1" + var`, `fmt.Sprintf()`, `strings.Join()` or `strings.Builder`? When does it make sense to add `sync.Pool`?
 
 > **TL;DR**: use `strings.Builder` when `len(str) < 100 & N ops < 1000`, use `sync.Pool + strings.Builder` when doing this for every request. For `len(str) > 100` use `+` or `strings.Join`.
+>
+> Use `fmt.Sprintf` for regular string formatting (not just concatenation).
 
 | Type                 | len(str) | N ops | ns/op         |     |
 | -------------------- | -------- | ----- | ------------- | --- |
@@ -205,4 +212,3 @@ Is it more efficient to `"str1" + var`, `fmt.Sprintf()`, `strings.Join()` or `st
 ### Notes
 - More "Rules of thumb" will be added over time.
 - All benchmarks were conducted on a **Macbook Pro M1 (2020) 16GB RAM**, using **Go 1.21.3**. 
-- As always, benchmark your data with your usecase, and on hardware where it will run (AWS/gcloud).
