@@ -7,6 +7,13 @@ Often, you'll find yourself in a situation where you need to weigh the benefits 
 
 The decision isn't as simple as solely relying on `Big O` notation, which primarily reflects time complexity. Real-world performance depends on various factors, such as memory locality, the number of allocations, pointer chasing, and more.
 
+## General rules of thumb that always apply
+Always KISS (keep it simple, stupid).
+
+1) make it work
+2) make it right
+3) make it fast
+
 ## Disclaimer
 ❗These rules are not a dogma! Please don't link to this document saying "you should use this because rules-of-thumb says so". Always measure and benchmark your own code with your own data.
 
@@ -188,26 +195,40 @@ Is it more efficient to `"str1" + var`, `fmt.Sprintf()`, `strings.Join()` or `st
 | strings_join         | 500      | 1000  | 379155 ns/op  |
 | strings_builder      | 500      | 1000  | 647395 ns/op  |
 | strings_builder_pool | 500      | 1000  | 573904 ns/op  |
-| plus_sign            | 1000     | 10    | 3220 ns/op    | ✅
+| plus_sign            | 1000     | 10    | 3220 ns/op    | ✅   |
 | sprintf              | 1000     | 10    | 4613 ns/op    |
 | strings_join         | 1000     | 10    | 3342 ns/op    |
 | strings_builder      | 1000     | 10    | 13307 ns/op   |
 | strings_builder_pool | 1000     | 10    | 13747 ns/op   |
 | plus_sign            | 1000     | 100   | 40945 ns/op   |
 | sprintf              | 1000     | 100   | 49810 ns/op   |
-| strings_join         | 1000     | 100   | 36396 ns/op   | ✅
+| strings_join         | 1000     | 100   | 36396 ns/op   | ✅   |
 | strings_builder      | 1000     | 100   | 142254 ns/op  |
 | strings_builder_pool | 1000     | 100   | 149184 ns/op  |
-| plus_sign            | 1000     | 500   | 224290 ns/op  | ✅
+| plus_sign            | 1000     | 500   | 224290 ns/op  | ✅   |
 | sprintf              | 1000     | 500   | 296963 ns/op  |
 | strings_join         | 1000     | 500   | 233688 ns/op  |
 | strings_builder      | 1000     | 500   | 783015 ns/op  |
 | strings_builder_pool | 1000     | 500   | 657683 ns/op  |
-| plus_sign            | 1000     | 1000  | 557672 ns/op  | ✅
+| plus_sign            | 1000     | 1000  | 557672 ns/op  | ✅   |
 | sprintf              | 1000     | 1000  | 715151 ns/op  |
 | strings_join         | 1000     | 1000  | 571112 ns/op  |
 | strings_builder      | 1000     | 1000  | 1326209 ns/op |
 | strings_builder_pool | 1000     | 1000  | 1106394 ns/op |
+
+## Pass by reference vs copy
+When should you pass a reference (pointer), and when should you use pass by value?
+
+> **TL;DR**: Pass by reference if you want to mutate the data, otherwise pass a copy. 
+
+Performance-wise, this one is almost impossible to give general advice for. If your struct (or nested structs)
+are very big (it depends on the types of fields too), copying will become slower. 
+But if you have many more pointers, you increase GC pressure and your program will
+spend more time on waiting on memory pointer lookup.
+
+References (pointers) vs copied values is way more complicated, 
+and there is tons of resources on this topic, great one is 
+[this article](https://dave.cheney.net/2017/04/29/there-is-no-pass-by-reference-in-go) by Dave Cheney.
 
 ### Notes
 - More "Rules of thumb" will be added over time.
