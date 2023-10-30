@@ -117,14 +117,41 @@ When checking if A is subset of B (A ⊆ B), when is it more efficient to iterat
 | map                  | 1000   | 1000   | 33859 ns/op  | ✅   |
 
 ## Append
-Is it more efficient to `append([]T, elems...)` or in a `for` loop one-by-one?
+```go
+append([]T, elems...) // append_expand
+```
+vs
+```go
+for _, e := range elems {
+    arr = append(arr, e) // append_for
+}
+```
+vs
+```go
+for _, e := range elems {
+    arr = append(arr, e) // append_for_prealloc
+}
+```
+vs
+```go
+for i, e := range elems {
+    arr[i] = e // append_for_index (pre-allocated)
+}
+```
 
-> **TL;DR**: ALWAYS use `append([]T, elems...)` because `for` looping may trigger multiple array re-sizings, whereas `append` will always allocate only once.
+> **TL;DR**: ALWAYS use `append([]T, elems...)` because `for` looping may trigger multiple array re-sizings, whereas `append` will always allocate only once. If you must use `for` loop (extra logic), try to pre-allocate the slice.
 
-| Type          | len(A) | len(B) | ns/op       | B/op       | allocs/op   |     |
-| ------------- | ------ | ------ | ----------- | ---------- | ----------- | --- |
-| append_expand | 10     | 1000   | 994.1 ns/op | 8192 B/op  | 1 allocs/op | ✅   |
-| append_for    | 10     | 1000   | 2533 ns/op  | 19936 B/op | 7 allocs/op |
+Even though regular `append()` has time complexity `O(1)` (amortized constant-time), because
+every time it needs to allocate more space, it grows the underlying data array by 2x, simply
+by having to allocate + copy makes it significantly slower than if you are able to calculate
+the resulting size and pre-allocating.
+
+| Type                | len(A) | len(B) | ns/op       | B/op       | allocs/op   |     |
+| ------------------- | ------ | ------ | ----------- | ---------- | ----------- | --- |
+| append_expand       | 10     | 1000   | 878.7 ns/op | 8192 B/op  | 1 allocs/op | ✅   |
+| append_for_index    | 10     | 1000   | 1049 ns/op  | 8192 B/op  | 1 allocs/op |
+| append_for_prealloc | 10     | 1000   | 1148 ns/op  | 8192 B/op  | 1 allocs/op |
+| append_for          | 10     | 1000   | 2115 ns/op  | 19936 B/op | 7 allocs/op |
 
 ## Strings concatenation
 Is it more efficient to `"str1" + var`, `fmt.Sprintf()`, `strings.Join()` or `strings.Builder`? When does it make sense to add `sync.Pool`?
@@ -216,6 +243,28 @@ Is it more efficient to `"str1" + var`, `fmt.Sprintf()`, `strings.Join()` or `st
 | strings_builder      | 1000     | 1000  | 1326209 ns/op |
 | strings_builder_pool | 1000     | 1000  | 1106394 ns/op |
 
+## If vs switch
+Is there even any difference? In theory, `switch` should be faster (at least for some types) if the
+compiler is able to transform it into a jump table.
+
+> **TL;DR**: Use which ever one is more readable.
+
+| Type   | N statements | ns/op        |     |
+| ------ | ------------ | ------------ | --- |
+| if     | 1            | 0.9470 ns/op |
+| switch | 1            | 0.9486 ns/op |
+| if     | 5            | 1.270 ns/op  |
+| switch | 5            | 1.578 ns/op  |
+
+It looks like Go doesn't support jump tables yet? The tests I tried compile into same code for both switch/if statements. You can try to hand-roll jump table [similar to the #19791](https://github.com/golang/go/issues/19791).
+
+Read more:
+- https://github.com/golang/go/issues/5496
+- https://github.com/golang/go/issues/19791
+- https://github.com/golang/go/issues/10870
+- https://go-review.googlesource.com/c/go/+/357330
+- https://go-review.googlesource.com/c/go/+/395714
+
 ## Pass by reference vs copy
 When should you pass a reference (pointer), and when should you use pass by value?
 
@@ -230,6 +279,6 @@ References (pointers) vs copied values is way more complicated,
 and there is tons of resources on this topic, great one is 
 [this article](https://dave.cheney.net/2017/04/29/there-is-no-pass-by-reference-in-go) by Dave Cheney.
 
-### Notes
+## Notes
 - More "Rules of thumb" will be added over time.
 - All benchmarks were conducted on a **Macbook Pro M1 (2020) 16GB RAM**, using **Go 1.21.3**. 
